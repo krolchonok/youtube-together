@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Встраивание YouTube видео с отслеживанием перемотки</title>
+</head>
+<style>
+  .block {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  input {
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+
+  .input_string {
+    width: 100vw;
+    justify-content: center;
+    align-items: center;
+    display: flex
+  }
+
+  .input_string input {
+    margin-right: 10px;
+  }
+</style>
+
+<body>
+  <div class="block">
+    <div class="input_string">
+      <input type="text" id="videoLink" placeholder="Вставьте ссылку на видео YouTube" />
+      <button onclick="loadVideo()">Загрузить видео</button>
+    </div>
+    <div id="player-container"></div>
+  </div>
+  <script>
+    // Инициализация YouTube API
+    var player;
+    var currentTime = 0; // Переменная для хранения текущего времени видео
+
+    function onYouTubeIframeAPIReady() {
+      console.log("YouTube API загружен");
+    }
+
+    // Функция для загрузки видео по ссылке
+    function loadVideo() {
+      var videoUrl = document.getElementById('videoLink').value;
+      var videoId = extractVideoId(videoUrl);
+      if (videoId) {
+        // Создаем новый iframe плеер
+        createPlayer(videoId);
+      } else {
+        alert('Неверная ссылка на видео');
+      }
+    }
+
+    // Функция для извлечения ID из URL
+    function extractVideoId(url) {
+      var regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      var match = url.match(regex);
+      return match ? match[1] : null;
+    }
+
+    // Функция для создания плеера
+    function createPlayer(videoId) {
+      var playerContainer = document.getElementById('player-container');
+      playerContainer.innerHTML = '';  // Очищаем контейнер перед загрузкой нового видео
+
+      player = new YT.Player(playerContainer, {
+        videoId: videoId,
+        events: {
+          'onStateChange': onPlayerStateChange,
+          'onPlaybackQualityChange': onPlaybackQualityChange
+        }
+      });
+
+      // Устанавливаем интервал для отслеживания текущего времени видео
+      setInterval(function () {
+        if (player) {
+          currentTime = player.getCurrentTime();
+          console.log("Текущее время видео: " + currentTime.toFixed(2) + " секунд");
+        }
+      }, 1000); // каждые 1 секунду
+    }
+
+    function pauseVideo() {
+      if (player) {
+        player.pauseVideo();
+      }
+    }
+
+    // Функция для воспроизведения
+    function playVideo() {
+      if (player) {
+        player.playVideo();
+      }
+    }
+
+    function setVideoTime(seconds) {
+      if (player) {
+        player.seekTo(seconds, true);
+        console.log("Установлено время воспроизведения: " + seconds + " секунд");
+      }
+    }
+
+    // Слушаем изменения состояния плеера
+    function onPlayerStateChange(event) {
+      if (event.data == YT.PlayerState.PAUSED) {
+        console.log('Видео на паузе');
+      } else if (event.data == YT.PlayerState.PLAYING) {
+        console.log('Видео воспроизводится');
+      } else if (event.data == YT.PlayerState.ENDED) {
+        console.log('Видео завершилось');
+      }
+    }
+
+    // Функция для отслеживания качества воспроизведения (необязательно)
+    function onPlaybackQualityChange(event) {
+      console.log("Качество видео изменилось: " + event.data);
+    }
+
+    // Загружаем API YouTube
+    var script = document.createElement('script');
+    script.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(script);
+  </script>
+</body>
+
+</html>
